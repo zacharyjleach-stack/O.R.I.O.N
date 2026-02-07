@@ -12,45 +12,62 @@
  * 5. Injects results back into Claude's terminal
  * 6. Claude continues coding with the new information
  *
- * The operator just sits back, gets a text when approval is needed,
- * replies "yes" or "no", and Claude keeps working.
+ * All external dependencies (analyzer, forwarder, executor) are injected,
+ * keeping this package free of hard dependencies on the main app.
  */
 
-import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { ConductorConfig } from "../config/types.conductor.js";
-import { createAnalyzer } from "./analyzer.js";
-import { createBrowserExecutor } from "./browser-executor.js";
-import { createGatewayForwarder } from "./forwarder.js";
-import { injectDenial, injectResults, injectTimeout } from "./injector.js";
-import { TerminalInterceptor, generateRequestId } from "./interceptor.js";
 import type {
   ConductorAuthorization,
+  ConductorConfig,
   ConductorEvent,
   ConductorEventListener,
+  ConductorExecutor,
+  ConductorForwarder,
   ConductorHistoryEntry,
+  ConductorInjection,
   ConductorSessionState,
   ExternalAccessRequest,
 } from "./types.js";
+import { createAnalyzer } from "./analyzer.js";
+import { injectDenial, injectResults, injectTimeout } from "./injector.js";
+import { TerminalInterceptor, generateRequestId } from "./interceptor.js";
 
 export type ConductorOptions = {
   config: ConductorConfig;
-  /** Override the analyzer (for testing). */
-  analyzerOverride?: ReturnType<typeof createAnalyzer>;
-  /** Override the forwarder (for testing). */
-  forwarderOverride?: ReturnType<typeof createGatewayForwarder>;
-  /** Override the executor (for testing). */
-  executorOverride?: ReturnType<typeof createBrowserExecutor>;
+  /** Provide a forwarder for messaging integration. Required for auth flow. */
+  forwarder?: ConductorForwarder;
+  /** Provide a browser executor. Required for browser actions. */
+  executor?: ConductorExecutor;
+};
+
+/** Stub executor that returns empty results (used when no executor is provided). */
+const stubExecutor: ConductorExecutor = {
+  async execute() {
+    return [];
+  },
+};
+
+/** Stub forwarder that logs to console (used when no forwarder is provided). */
+const stubForwarder: ConductorForwarder = {
+  async requestAuthorization(request) {
+    console.log(`[conductor] Authorization needed: ${request.summary} (no forwarder configured)`);
+  },
+  async notifyResult() {},
+  onAuthorization() {
+    return () => {};
+  },
+  stop() {},
 };
 
 export class Conductor {
   private readonly config: ConductorConfig;
   private readonly interceptor: TerminalInterceptor;
   private readonly analyzer: ReturnType<typeof createAnalyzer>;
-  private readonly forwarder: ReturnType<typeof createGatewayForwarder>;
-  private readonly executor: ReturnType<typeof createBrowserExecutor>;
+  private readonly forwarder: ConductorForwarder;
+  private readonly executor: ConductorExecutor;
   private readonly listeners = new Set<ConductorEventListener>();
   private readonly state: ConductorSessionState;
   private forwarderCleanup: (() => void) | null = null;
@@ -59,12 +76,9 @@ export class Conductor {
   constructor(options: ConductorOptions) {
     this.config = options.config;
     this.interceptor = new TerminalInterceptor(options.config);
-    this.analyzer = options.analyzerOverride ?? createAnalyzer(options.config.analyzer);
-    this.forwarder =
-      options.forwarderOverride ??
-      createGatewayForwarder(options.config.auth ?? { targets: [] });
-    this.executor =
-      options.executorOverride ?? createBrowserExecutor(options.config.browser ?? {});
+    this.analyzer = createAnalyzer(options.config.analyzer);
+    this.forwarder = options.forwarder ?? stubForwarder;
+    this.executor = options.executor ?? stubExecutor;
     this.state = {
       pending: new Map(),
       history: [],
@@ -174,7 +188,16 @@ export class Conductor {
       if (autoDecision === "deny") {
         this.audit({ event: "auto-denied", request });
         const injection = injectDenial(this.interceptor, request, "blocked by auto-deny rule");
-        this.recordHistory(request, { requestId: request.id, decision: "deny", resolvedAtMs: Date.now(), resolvedBy: "auto-deny" }, injection);
+        this.recordHistory(
+          request,
+          {
+            requestId: request.id,
+            decision: "deny",
+            resolvedAtMs: Date.now(),
+            resolvedBy: "auto-deny",
+          },
+          injection,
+        );
         return;
       }
       if (autoDecision === "approve") {
@@ -250,9 +273,7 @@ export class Conductor {
   // Auto-approve/deny rules
   // -------------------------------------------------------------------------
 
-  private checkAutoRules(
-    request: ExternalAccessRequest,
-  ): "approve" | "deny" | null {
+  private checkAutoRules(request: ExternalAccessRequest): "approve" | "deny" | null {
     const url = request.url;
     if (!url) {
       return null;

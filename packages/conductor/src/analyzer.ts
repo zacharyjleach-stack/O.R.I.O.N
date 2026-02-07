@@ -13,11 +13,11 @@
  * browser actions to fulfill the request.
  */
 
-import type { ConductorAnalyzerConfig } from "../config/types.conductor.js";
 import type {
   AnalyzerResult,
   BrowserAction,
   ConductorAnalyzer,
+  ConductorAnalyzerConfig,
   ExternalAccessKind,
 } from "./types.js";
 
@@ -49,7 +49,8 @@ const DEFAULT_PATTERNS: Array<{ pattern: RegExp; kind: ExternalAccessKind }> = [
   },
   // API check
   {
-    pattern: /(?:check|verify|test|hit|call)\s+(?:the\s+)?(?:api|endpoint)\s+(?:at\s+)?(https?:\/\/[^\s"'`]+)/i,
+    pattern:
+      /(?:check|verify|test|hit|call)\s+(?:the\s+)?(?:api|endpoint)\s+(?:at\s+)?(https?:\/\/[^\s"'`]+)/i,
     kind: "api-check",
   },
   // Service action
@@ -65,7 +66,8 @@ const DEFAULT_PATTERNS: Array<{ pattern: RegExp; kind: ExternalAccessKind }> = [
   },
   // File download
   {
-    pattern: /(?:download|fetch|get)\s+(?:the\s+)?(?:file|asset|resource)\s+(?:from|at)\s+(https?:\/\/[^\s"'`]+)/i,
+    pattern:
+      /(?:download|fetch|get)\s+(?:the\s+)?(?:file|asset|resource)\s+(?:from|at)\s+(https?:\/\/[^\s"'`]+)/i,
     kind: "file-download",
   },
   // Verification

@@ -13,7 +13,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import crypto from "node:crypto";
 import { EventEmitter } from "node:events";
-import type { ConductorConfig } from "../config/types.conductor.js";
+import type { ConductorConfig } from "./types.js";
 
 export type InterceptorEvents = {
   output: (text: string) => void;

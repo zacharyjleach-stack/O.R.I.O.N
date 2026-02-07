@@ -9,14 +9,14 @@
  * already provides, so we get profile support, Chrome extension relay, etc.
  */
 
-import type { ConductorBrowserConfig } from "../config/types.conductor.js";
 import type {
   BrowserAction,
   BrowserActionResult,
   ConductorAuthorization,
+  ConductorBrowserConfig,
   ConductorExecutor,
   ExternalAccessRequest,
-} from "./types.js";
+} from "@aether/conductor";
 
 export function createBrowserExecutor(config: ConductorBrowserConfig): ConductorExecutor {
   const profile = config.profile ?? "openclaw";
@@ -114,15 +114,8 @@ async function executeAction(
   opts: { profile: string; actionTimeoutMs: number },
 ): Promise<BrowserActionResult> {
   // Lazy imports to avoid loading browser modules at startup
-  const {
-    browserNavigate,
-    browserScreenshotAction,
-  } = await import("../browser/client-actions.js");
-  const {
-    browserSnapshot,
-    browserStart,
-    browserStatus,
-  } = await import("../browser/client.js");
+  const { browserNavigate, browserScreenshotAction } = await import("../browser/client-actions.js");
+  const { browserSnapshot, browserStart, browserStatus } = await import("../browser/client.js");
 
   const { profile } = opts;
 

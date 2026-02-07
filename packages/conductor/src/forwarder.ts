@@ -2,15 +2,14 @@
  * Authorization Forwarder
  *
  * Sends external-access authorization requests to the operator via messaging
- * channels (Telegram, Signal, Discord, etc.) and listens for responses.
+ * channels (WhatsApp, Signal, Discord, etc.) and listens for responses.
  *
- * Follows the same pattern as the exec-approval forwarder but adapted for
- * the conductor's external-access authorization flow.
+ * This module uses dependency injection for the messaging layer — the actual
+ * send/receive is provided by the integration layer in the main app.
  */
 
-import crypto from "node:crypto";
-import type { ConductorAuthConfig } from "../config/types.conductor.js";
 import type {
+  ConductorAuthConfig,
   ConductorAuthorization,
   ConductorDecision,
   ConductorForwarder,
@@ -57,8 +56,7 @@ export function createConductorForwarder(deps: {
           text === "go" ||
           text === "y" ||
           text.startsWith("yes ");
-        const isDenial =
-          text === "no" || text === "deny" || text === "n" || text.startsWith("no ");
+        const isDenial = text === "no" || text === "deny" || text === "n" || text.startsWith("no ");
         const hasInstructions = text.startsWith("yes ") || text.startsWith("approve ");
 
         if (matchesId || (pending.size === 1 && (isApproval || isDenial))) {
@@ -112,7 +110,9 @@ export function createConductorForwarder(deps: {
           })
           .catch((err) => {
             // Log but don't throw — best-effort delivery
-            console.error(`[conductor] Failed to forward to ${target.channel}:${target.to}: ${err}`);
+            console.error(
+              `[conductor] Failed to forward to ${target.channel}:${target.to}: ${err}`,
+            );
           }),
       );
 
@@ -230,40 +230,4 @@ function formatResultNotification(
     `Data injected into Claude: ${injection.payload.length > 200 ? `${injection.payload.slice(0, 200)}...` : injection.payload}`,
   ];
   return lines.join("\n");
-}
-
-/**
- * Create a forwarder that uses the gateway's message tool to send messages.
- * This is the production integration path.
- */
-export function createGatewayForwarder(config: ConductorAuthConfig): ConductorForwarder {
-  // Lazy import to avoid circular deps
-  const sendViaGateway = async (params: {
-    channel: string;
-    to: string;
-    message: string;
-    accountId?: string;
-    threadId?: string | number;
-  }) => {
-    const { runMessageAction } = await import("../infra/outbound/message-action-runner.js");
-    const { loadConfig } = await import("../config/config.js");
-    const cfg = loadConfig();
-    await runMessageAction({
-      cfg,
-      action: "send",
-      params: {
-        action: "send",
-        channel: params.channel,
-        target: params.to,
-        message: params.message,
-        accountId: params.accountId,
-        threadId: params.threadId,
-      },
-    });
-  };
-
-  return createConductorForwarder({
-    config,
-    sendMessage: sendViaGateway,
-  });
 }

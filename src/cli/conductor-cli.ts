@@ -9,10 +9,12 @@
  *   openclaw conductor config           — Show current conductor config
  */
 
+import type { ConductorConfig } from "@aether/conductor";
 import type { Command } from "commander";
+import { createBrowserExecutor } from "../conductor/browser-executor.js";
+import { createGatewayForwarder } from "../conductor/gateway-forwarder.js";
+import { Conductor } from "../conductor/index.js";
 import { loadConfig } from "../config/config.js";
-import { Conductor } from "../conductor/conductor.js";
-import type { ConductorConfig } from "../config/types.conductor.js";
 import { defaultRuntime } from "../runtime.js";
 import { isRich, theme } from "../terminal/theme.js";
 import { runCommandWithRuntime } from "./cli-utils.js";
@@ -35,12 +37,9 @@ ${isRich() ? theme.muted("external access, routing them through messaging for yo
     .description("Start the conductor, wrapping the specified AI agent command")
     .option("--command <cmd>", "Command to wrap (default: claude)")
     .option("--args <args>", "Arguments for the wrapped command (comma-separated)")
-    .option(
-      "--analyzer <provider>",
-      "Analyzer provider: gemini, openai, regex (default: gemini)",
-    )
+    .option("--analyzer <provider>", "Analyzer provider: gemini, openai, regex (default: gemini)")
     .option("--confidence <threshold>", "Minimum confidence threshold (0-1)", "0.7")
-    .option("--channel <channel>", "Messaging channel for auth requests (e.g., telegram)")
+    .option("--channel <channel>", "Messaging channel for auth requests (e.g., whatsapp)")
     .option("--to <target>", "Messaging target (chat/user ID)")
     .option("--auto-approve <patterns>", "URL patterns to auto-approve (comma-separated)")
     .option("--auto-deny <patterns>", "URL patterns to auto-deny (comma-separated)")
@@ -57,17 +56,11 @@ ${isRich() ? theme.muted("external access, routing them through messaging for yo
             `  Command: ${conductorConfig.wrappedCommand} ${(conductorConfig.wrappedArgs ?? []).join(" ")}`,
           ),
         );
-        console.log(
-          theme.muted(
-            `  Analyzer: ${conductorConfig.analyzer?.provider ?? "gemini"}`,
-          ),
-        );
+        console.log(theme.muted(`  Analyzer: ${conductorConfig.analyzer?.provider ?? "gemini"}`));
         const targets = conductorConfig.auth?.targets ?? [];
         if (targets.length > 0) {
           console.log(
-            theme.muted(
-              `  Auth targets: ${targets.map((t) => `${t.channel}:${t.to}`).join(", ")}`,
-            ),
+            theme.muted(`  Auth targets: ${targets.map((t) => `${t.channel}:${t.to}`).join(", ")}`),
           );
         } else {
           console.log(
@@ -78,7 +71,12 @@ ${isRich() ? theme.muted("external access, routing them through messaging for yo
         }
         console.log("");
 
-        const conductor = new Conductor({ config: conductorConfig });
+        // Wire up the conductor with OpenClaw adapters
+        const conductor = new Conductor({
+          config: conductorConfig,
+          forwarder: createGatewayForwarder(conductorConfig.auth ?? { targets: [] }),
+          executor: createBrowserExecutor(conductorConfig.browser ?? {}),
+        });
 
         // Log events to console
         conductor.on((event) => {
@@ -88,19 +86,13 @@ ${isRich() ? theme.muted("external access, routing them through messaging for yo
               break;
             case "request-detected":
               console.log(
-                theme.warn(
-                  `\n[Conductor] External access detected: ${event.request.summary}`,
-                ),
+                theme.warn(`\n[Conductor] External access detected: ${event.request.summary}`),
               );
-              console.log(
-                theme.muted(`  Kind: ${event.request.kind}`),
-              );
+              console.log(theme.muted(`  Kind: ${event.request.kind}`));
               if (event.request.url) {
                 console.log(theme.muted(`  URL: ${event.request.url}`));
               }
-              console.log(
-                theme.info("  Waiting for operator authorization..."),
-              );
+              console.log(theme.info("  Waiting for operator authorization..."));
               break;
             case "authorization-received":
               console.log(
@@ -147,7 +139,6 @@ ${isRich() ? theme.muted("external access, routing them through messaging for yo
     .description("Show current conductor session state")
     .action(async () => {
       await runCommandWithRuntime(defaultRuntime, async () => {
-        // For now, read from the audit log to show recent state
         console.log(theme.info("Conductor status:"));
         console.log(theme.muted("  (Run 'openclaw conductor run' to start a session)"));
       });
@@ -168,16 +159,16 @@ ${isRich() ? theme.muted("external access, routing them through messaging for yo
           console.log(theme.muted("No audit history found."));
           return;
         }
-        const lines = fs
-          .readFileSync(auditPath, "utf8")
-          .trim()
-          .split("\n")
-          .filter(Boolean);
+        const lines = fs.readFileSync(auditPath, "utf8").trim().split("\n").filter(Boolean);
         const limit = Number.parseInt(String(opts.limit), 10) || 20;
         const recent = lines.slice(-limit);
         for (const line of recent) {
           try {
-            const entry = JSON.parse(line) as { event?: string; ts?: number; [key: string]: unknown };
+            const entry = JSON.parse(line) as {
+              event?: string;
+              ts?: number;
+              [key: string]: unknown;
+            };
             const time = entry.ts ? new Date(entry.ts).toISOString() : "?";
             console.log(`${theme.muted(time)} ${entry.event ?? "unknown"}`);
           } catch {
@@ -198,9 +189,7 @@ ${isRich() ? theme.muted("external access, routing them through messaging for yo
         if (!conductorCfg) {
           console.log(theme.muted("No conductor config found in openclaw.json."));
           console.log(
-            theme.muted(
-              'Add a "conductor" section to ~/.openclaw/openclaw.json to configure.',
-            ),
+            theme.muted('Add a "conductor" section to ~/.openclaw/openclaw.json to configure.'),
           );
           return;
         }
@@ -219,7 +208,6 @@ function buildConductorConfig(
 ): ConductorConfig {
   const base: ConductorConfig = { ...fileConfig };
 
-  // --command flag overrides wrappedCommand
   if (typeof opts.command === "string" && opts.command.trim()) {
     const parts = opts.command.trim().split(/\s+/);
     base.wrappedCommand = parts[0];
@@ -228,12 +216,10 @@ function buildConductorConfig(
     }
   }
 
-  // --args flag
   if (typeof opts.args === "string" && opts.args.trim()) {
     base.wrappedArgs = opts.args.split(",").map((a: string) => a.trim());
   }
 
-  // --analyzer flag
   if (typeof opts.analyzer === "string") {
     base.analyzer = {
       ...base.analyzer,
@@ -241,7 +227,6 @@ function buildConductorConfig(
     };
   }
 
-  // --confidence flag
   if (typeof opts.confidence === "string") {
     const threshold = Number.parseFloat(opts.confidence);
     if (!Number.isNaN(threshold)) {
@@ -249,7 +234,6 @@ function buildConductorConfig(
     }
   }
 
-  // --channel + --to flags
   if (typeof opts.channel === "string" && typeof opts.to === "string") {
     const target = { channel: opts.channel, to: opts.to };
     base.auth = {
@@ -258,7 +242,6 @@ function buildConductorConfig(
     };
   }
 
-  // --auto-approve
   if (typeof opts.autoApprove === "string") {
     base.auth = {
       ...base.auth,
@@ -266,7 +249,6 @@ function buildConductorConfig(
     };
   }
 
-  // --auto-deny
   if (typeof opts.autoDeny === "string") {
     base.auth = {
       ...base.auth,
@@ -274,7 +256,6 @@ function buildConductorConfig(
     };
   }
 
-  // --timeout
   if (typeof opts.timeout === "string") {
     const ms = Number.parseInt(opts.timeout, 10);
     if (!Number.isNaN(ms)) {
@@ -282,7 +263,6 @@ function buildConductorConfig(
     }
   }
 
-  // --no-audit
   if (opts.audit === false) {
     base.auditLog = false;
   }

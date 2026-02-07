@@ -7,11 +7,7 @@
  */
 
 import type { TerminalInterceptor } from "./interceptor.js";
-import type {
-  BrowserActionResult,
-  ConductorInjection,
-  ExternalAccessRequest,
-} from "./types.js";
+import type { BrowserActionResult, ConductorInjection, ExternalAccessRequest } from "./types.js";
 
 /**
  * Format browser action results into a string suitable for terminal injection.
