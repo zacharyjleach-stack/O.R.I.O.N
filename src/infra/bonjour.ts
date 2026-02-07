@@ -40,12 +40,14 @@ function isDisabledByEnv() {
 
 function safeServiceName(name: string) {
   const trimmed = name.trim();
-  return trimmed.length > 0 ? trimmed : "OpenClaw";
+  return trimmed.length > 0 ? trimmed : "ORION";
 }
 
 function prettifyInstanceName(name: string) {
   const normalized = name.trim().replace(/\s+/g, " ");
-  return normalized.replace(/\s+\(OpenClaw\)\s*$/i, "").trim() || normalized;
+  return (
+    normalized.replace(/\s+\((?:OpenClaw|O\.R\.I\.O\.N|ORION)\)\s*$/i, "").trim() || normalized
+  );
 }
 
 type BonjourService = {
