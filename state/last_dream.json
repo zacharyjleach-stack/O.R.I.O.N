@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-02-12 10:38:13",
+  "result": {
+    "status": "error",
+    "reason": "No module named 'chromadb'"
+  },
+  "logs_dir": "/workspaces/openclaw/logs",
+  "ollama_host": "http://localhost:11434"
+}

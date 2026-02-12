@@ -1,5 +1,6 @@
 import type { NormalizedChatType } from "../channels/chat-type.js";
 import type { AgentElevatedAllowFromConfig, SessionSendPolicyAction } from "./types.base.js";
+import type { HomeAssistantConfig } from "./types.home-assistant.js";
 
 export type MediaUnderstandingScopeMatch = {
   channel?: string;
@@ -431,6 +432,8 @@ export type ToolsConfig = {
     /** Approved senders for /elevated (per-provider allowlists). */
     allowFrom?: AgentElevatedAllowFromConfig;
   };
+  /** Home Assistant smart-home integration. */
+  homeAssistant?: HomeAssistantConfig;
   /** Exec tool defaults. */
   exec?: ExecToolConfig;
   /** Sub-agent tool policy defaults (deny wins). */
