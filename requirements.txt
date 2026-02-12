@@ -8,6 +8,9 @@ sentence-transformers>=2.2.0
 requests>=2.31.0
 gitpython>=3.1.40
 
+# Dream Scheduler (cross-platform nightly automation)
+schedule>=1.2.0
+
 # Vision Loop - Desktop Automation with Computer Vision
 mss>=9.0.0               # Fast screenshot capture
 pillow>=10.0.0           # Image processing
