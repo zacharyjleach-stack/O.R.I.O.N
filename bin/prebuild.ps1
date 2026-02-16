@@ -1,5 +1,5 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# O.R.I.O.N. All-In-One Prebuild — Windows (PowerShell 5.1+)
+# -----------------------------------------------------------------------------
+# O.R.I.O.N. All-In-One Prebuild -- Windows (PowerShell 5.1+)
 #
 # Zero-to-running: installs ALL prerequisites, clones the repo, and builds.
 #
@@ -13,9 +13,9 @@
 #
 # What it does (13 steps):
 #   1.  Installs Git (winget or choco)
-#   2.  Installs Node.js >= 22 (winget or choco)
+#   2.  Installs Node.js 22+ (winget or choco)
 #   3.  Installs pnpm (corepack or npm)
-#   4.  Installs Python >= 3.10 (winget or choco)
+#   4.  Installs Python 3.10+ (winget or choco)
 #   5.  Installs Ollama + pulls llama3 model
 #   6.  Clones the O.R.I.O.N. repository
 #   7.  Installs Node dependencies (pnpm install)
@@ -26,7 +26,7 @@
 #  12.  Builds TypeScript (tsdown + post-build scripts)
 #  13.  Generates ~/.openclaw/openclaw.json config
 #  14.  Verifies the full build
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 param(
     [string]$InstallDir   = (Join-Path $HOME "O.R.I.O.N"),
     [string]$Branch       = "main",
@@ -38,21 +38,21 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$ProgressPreference    = "SilentlyContinue"   # Speed up Invoke-WebRequest
+$ProgressPreference    = "SilentlyContinue"
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 #  LOGGING
-# ══════════════════════════════════════════════════════════════════════════════
-function Write-Banner { param($msg) Write-Host "`n>>> $msg" -ForegroundColor Magenta }
-function Write-Info   { param($msg) Write-Host "  [O.R.I.O.N.] $msg" -ForegroundColor Cyan }
-function Write-Ok     { param($msg) Write-Host "  [O.R.I.O.N.] $msg" -ForegroundColor Green }
-function Write-Warn   { param($msg) Write-Host "  [O.R.I.O.N.] $msg" -ForegroundColor Yellow }
-function Write-Fail   { param($msg) Write-Host "  [O.R.I.O.N.] ERROR: $msg" -ForegroundColor Red; exit 1 }
-function Write-Step   { param($num, $total, $msg) Write-Host "`n  [$num/$total] $msg" -ForegroundColor White }
+# ==============================================================================
+function Write-Banner { param($msg) Write-Host ("`n>>> " + $msg) -ForegroundColor Magenta }
+function Write-Info   { param($msg) Write-Host ("  [O.R.I.O.N.] " + $msg) -ForegroundColor Cyan }
+function Write-Ok     { param($msg) Write-Host ("  [O.R.I.O.N.] " + $msg) -ForegroundColor Green }
+function Write-Warn   { param($msg) Write-Host ("  [O.R.I.O.N.] " + $msg) -ForegroundColor Yellow }
+function Write-Fail   { param($msg) Write-Host ("  [O.R.I.O.N.] ERROR: " + $msg) -ForegroundColor Red; exit 1 }
+function Write-Step   { param($num, $total, $msg) Write-Host ("`n  [" + $num + "/" + $total + "] " + $msg) -ForegroundColor White }
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 #  UTILITIES
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 function Test-Command {
     param($cmd)
     return [bool](Get-Command $cmd -ErrorAction SilentlyContinue)
@@ -68,13 +68,7 @@ function Refresh-Path {
                 [System.Environment]::GetEnvironmentVariable("Path", "User")
 }
 
-function Require-Admin {
-    $identity  = [Security.Principal.WindowsIdentity]::GetCurrent()
-    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
-    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-}
-
-# ── Step counter ──────────────────────────────────────────────────────────────
+# -- Step counter --------------------------------------------------------------
 $totalSteps = 13
 if ($SkipOllama)     { $totalSteps -= 1 }
 if ($SkipPython)     { $totalSteps -= 1 }
@@ -84,15 +78,15 @@ $stepNum = 0
 
 function Next-Step { param($msg) $script:stepNum++; Write-Step $script:stepNum $totalSteps $msg }
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 #  STEP IMPLEMENTATIONS
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
-# ── 1. Git ────────────────────────────────────────────────────────────────────
+# -- 1. Git --------------------------------------------------------------------
 function Install-Git {
     if (Test-Command "git") {
         $ver = (git --version) -replace 'git version\s*', ''
-        Write-Ok "Git $ver already installed"
+        Write-Ok ("Git " + $ver + " already installed")
         return
     }
     Write-Info "Git not found; installing..."
@@ -101,7 +95,7 @@ function Install-Git {
     } elseif (Test-Command "choco") {
         choco install git -y
     } else {
-        Write-Fail "Neither winget nor choco found. Install Git manually: https://git-scm.com/download/win"
+        Write-Fail 'Neither winget nor choco found. Install Git manually: https://git-scm.com/download/win'
     }
     Refresh-Path
     if (-not (Test-Command "git")) {
@@ -110,15 +104,15 @@ function Install-Git {
     Write-Ok "Git installed"
 }
 
-# ── 2. Node.js >= 22 ─────────────────────────────────────────────────────────
+# -- 2. Node.js 22+ -----------------------------------------------------------
 function Install-NodeJs {
     if (Test-Command "node") {
         $ver = (node -v) -replace '^v', ''
         if (Test-VersionGte $ver "22.0.0") {
-            Write-Ok "Node.js $ver already installed (22+)"
+            Write-Ok ("Node.js " + $ver + " already installed (22+)")
             return
         }
-        Write-Warn "Node.js $ver found but < 22; upgrading..."
+        Write-Warn ("Node.js " + $ver + " found but older than 22; upgrading...")
     } else {
         Write-Info "Node.js not found; installing..."
     }
@@ -136,15 +130,15 @@ function Install-NodeJs {
     }
     $ver = (node -v) -replace '^v', ''
     if (-not (Test-VersionGte $ver "22.0.0")) {
-        Write-Fail "Failed to get Node.js 22+ (got $ver)"
+        Write-Fail ("Failed to get Node.js 22+ (got " + $ver + ")")
     }
-    Write-Ok "Node.js $ver installed"
+    Write-Ok ("Node.js " + $ver + " installed")
 }
 
-# ── 3. pnpm ──────────────────────────────────────────────────────────────────
+# -- 3. pnpm ------------------------------------------------------------------
 function Install-Pnpm {
     if (Test-Command "pnpm") {
-        Write-Ok "pnpm $(pnpm -v) already installed"
+        Write-Ok ("pnpm " + (pnpm -v) + " already installed")
         return
     }
     Write-Info "Installing pnpm..."
@@ -158,10 +152,10 @@ function Install-Pnpm {
     if (-not (Test-Command "pnpm")) {
         Write-Fail "Failed to install pnpm"
     }
-    Write-Ok "pnpm $(pnpm -v) installed"
+    Write-Ok ("pnpm " + (pnpm -v) + " installed")
 }
 
-# ── 4. Python >= 3.10 ────────────────────────────────────────────────────────
+# -- 4. Python 3.10+ ----------------------------------------------------------
 function Install-Python {
     $script:pythonCmd = $null
     foreach ($cmd in @("python3", "python", "py")) {
@@ -170,7 +164,7 @@ function Install-Python {
             if ($ver -match '(\d+\.\d+\.\d+)') {
                 if (Test-VersionGte $Matches[1] "3.10.0") {
                     $script:pythonCmd = $cmd
-                    Write-Ok "Python $($Matches[1]) already installed (3.10+)"
+                    Write-Ok ("Python " + $Matches[1] + " already installed (3.10+)")
                     return
                 }
             }
@@ -195,7 +189,7 @@ function Install-Python {
     Write-Ok "Python installed"
 }
 
-# ── 5. Ollama + llama3 ───────────────────────────────────────────────────────
+# -- 5. Ollama + llama3 -------------------------------------------------------
 function Install-Ollama {
     if (Test-Command "ollama") {
         Write-Ok "Ollama already installed"
@@ -234,11 +228,11 @@ function Install-Ollama {
     Write-Ok "llama3 model ready"
 }
 
-# ── 6. Clone repository ──────────────────────────────────────────────────────
+# -- 6. Clone repository ------------------------------------------------------
 function Clone-Repository {
     if (Test-Path (Join-Path $InstallDir "package.json")) {
-        Write-Info "Repository already exists at $InstallDir"
-        Write-Info "Pulling latest changes on branch '$Branch'..."
+        Write-Info ("Repository already exists at " + $InstallDir)
+        Write-Info ("Pulling latest changes on branch '" + $Branch + "'...")
         Push-Location $InstallDir
         git fetch origin 2>$null
         git checkout $Branch 2>$null
@@ -258,18 +252,17 @@ function Clone-Repository {
         New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
     }
 
-    Write-Info "Cloning O.R.I.O.N. into $InstallDir ..."
+    Write-Info ("Cloning O.R.I.O.N. into " + $InstallDir + " ...")
     git clone --branch $Branch --single-branch --depth 1 $RepoUrl $InstallDir
     if ($LASTEXITCODE -ne 0) {
-        # Retry without shallow clone (some Git versions have issues)
         Write-Warn "Shallow clone failed; trying full clone..."
         git clone --branch $Branch $RepoUrl $InstallDir
-        if ($LASTEXITCODE -ne 0) { Write-Fail "Failed to clone repository from $RepoUrl" }
+        if ($LASTEXITCODE -ne 0) { Write-Fail ("Failed to clone repository from " + $RepoUrl) }
     }
-    Write-Ok "Repository cloned to $InstallDir"
+    Write-Ok ("Repository cloned to " + $InstallDir)
 }
 
-# ── 7. pnpm install ──────────────────────────────────────────────────────────
+# -- 7. pnpm install ----------------------------------------------------------
 function Install-Dependencies {
     Write-Info "Running pnpm install..."
     pnpm install --frozen-lockfile
@@ -281,7 +274,7 @@ function Install-Dependencies {
     Write-Ok "Node dependencies installed"
 }
 
-# ── 8. UI workspace dependencies ─────────────────────────────────────────────
+# -- 8. UI workspace dependencies ---------------------------------------------
 function Install-UIDependencies {
     if (Test-Path "ui/package.json") {
         Write-Info "Installing UI workspace dependencies..."
@@ -297,10 +290,9 @@ function Install-UIDependencies {
     }
 }
 
-# ── 9. Python brain dependencies ─────────────────────────────────────────────
+# -- 9. Python brain dependencies ---------------------------------------------
 function Install-PythonDeps {
     if (-not $script:pythonCmd) {
-        # Resolve python command if Install-Python was skipped
         foreach ($cmd in @("python3", "python", "py")) {
             if (Test-Command $cmd) { $script:pythonCmd = $cmd; break }
         }
@@ -324,7 +316,7 @@ function Install-PythonDeps {
     }
 }
 
-# ── 10. Playwright browsers ──────────────────────────────────────────────────
+# -- 10. Playwright browsers --------------------------------------------------
 function Install-PlaywrightBrowsers {
     Write-Info "Installing Playwright Chromium browser..."
     npx playwright install chromium
@@ -339,7 +331,7 @@ function Install-PlaywrightBrowsers {
     Write-Ok "Playwright setup complete"
 }
 
-# ── 11. Build UI ─────────────────────────────────────────────────────────────
+# -- 11. Build UI -------------------------------------------------------------
 function Build-UI {
     Write-Info "Building UI..."
     pnpm ui:build
@@ -347,7 +339,7 @@ function Build-UI {
     Write-Ok "UI built"
 }
 
-# ── 12. Build TypeScript ─────────────────────────────────────────────────────
+# -- 12. Build TypeScript -----------------------------------------------------
 function Build-TypeScript {
     Write-Info "Building TypeScript (full build pipeline)..."
     pnpm build
@@ -355,13 +347,13 @@ function Build-TypeScript {
     Write-Ok "TypeScript build complete"
 }
 
-# ── 13. Generate config ──────────────────────────────────────────────────────
+# -- 13. Generate config ------------------------------------------------------
 function New-OrionConfig {
     $configDir  = Join-Path $HOME ".openclaw"
     $configFile = Join-Path $configDir "openclaw.json"
 
     if (Test-Path $configFile) {
-        Write-Warn "Config already exists at $configFile — skipping."
+        Write-Warn ("Config already exists at " + $configFile + " -- skipping.")
         Write-Warn "Delete it and re-run to regenerate."
         return
     }
@@ -406,10 +398,10 @@ function New-OrionConfig {
 '@
 
     Set-Content -Path $configFile -Value $config -Encoding UTF8
-    Write-Ok "Config written to $configFile"
+    Write-Ok ("Config written to " + $configFile)
 }
 
-# ── Verify build ─────────────────────────────────────────────────────────────
+# -- Verify build --------------------------------------------------------------
 function Verify-Build {
     Write-Banner "Verifying build artifacts..."
 
@@ -424,9 +416,9 @@ function Verify-Build {
     $allOk = $true
     foreach ($check in $checks) {
         if (Test-Path $check.Path) {
-            Write-Ok "$($check.Label)"
+            Write-Ok $check.Label
         } else {
-            Write-Warn "MISSING: $($check.Label)"
+            Write-Warn ("MISSING: " + $check.Label)
             $allOk = $false
         }
     }
@@ -438,30 +430,30 @@ function Verify-Build {
     }
 }
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 #  MAIN
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 function Main {
     Write-Host ""
-    Write-Host "  ╔═══════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "  ║                                                       ║" -ForegroundColor Cyan
-    Write-Host "  ║   O.R.I.O.N. — All-In-One Prebuild (Windows v2)      ║" -ForegroundColor Cyan
-    Write-Host "  ║                                                       ║" -ForegroundColor Cyan
-    Write-Host "  ║   Clone + Install + Build — one command, zero config  ║" -ForegroundColor Cyan
-    Write-Host "  ║                                                       ║" -ForegroundColor Cyan
-    Write-Host "  ╚═══════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+    Write-Host "  +=========================================================+" -ForegroundColor Cyan
+    Write-Host "  |                                                         |" -ForegroundColor Cyan
+    Write-Host "  |   O.R.I.O.N. -- All-In-One Prebuild (Windows v2)       |" -ForegroundColor Cyan
+    Write-Host "  |                                                         |" -ForegroundColor Cyan
+    Write-Host "  |   Clone + Install + Build -- one command, zero config   |" -ForegroundColor Cyan
+    Write-Host "  |                                                         |" -ForegroundColor Cyan
+    Write-Host "  +=========================================================+" -ForegroundColor Cyan
     Write-Host ""
-    Write-Info "Install directory : $InstallDir"
-    Write-Info "Branch            : $Branch"
-    Write-Info "Skip Ollama       : $SkipOllama"
-    Write-Info "Skip Python       : $SkipPython"
-    Write-Info "Skip Playwright   : $SkipPlaywright"
+    Write-Info ("Install directory : " + $InstallDir)
+    Write-Info ("Branch            : " + $Branch)
+    Write-Info ("Skip Ollama       : " + $SkipOllama)
+    Write-Info ("Skip Python       : " + $SkipPython)
+    Write-Info ("Skip Playwright   : " + $SkipPlaywright)
     Write-Host ""
 
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
-    # ── Phase 1: System Prerequisites ─────────────────────────────────────────
-    Write-Banner "Phase 1/4 — System Prerequisites"
+    # -- Phase 1: System Prerequisites ----------------------------------------
+    Write-Banner "Phase 1/4 -- System Prerequisites"
 
     Next-Step "Installing Git"
     Install-Git
@@ -482,8 +474,8 @@ function Main {
         Install-Ollama
     }
 
-    # ── Phase 2: Clone Repository ─────────────────────────────────────────────
-    Write-Banner "Phase 2/4 — Repository"
+    # -- Phase 2: Clone Repository --------------------------------------------
+    Write-Banner "Phase 2/4 -- Repository"
 
     if (-not $SkipClone) {
         Next-Step "Cloning O.R.I.O.N. repository"
@@ -492,10 +484,10 @@ function Main {
 
     # cd into project for remaining steps
     Set-Location $InstallDir
-    Write-Info "Working directory: $(Get-Location)"
+    Write-Info ("Working directory: " + (Get-Location))
 
-    # ── Phase 3: Dependencies ─────────────────────────────────────────────────
-    Write-Banner "Phase 3/4 — Dependencies"
+    # -- Phase 3: Dependencies ------------------------------------------------
+    Write-Banner "Phase 3/4 -- Dependencies"
 
     Next-Step "Installing Node dependencies (pnpm install)"
     Install-Dependencies
@@ -513,8 +505,8 @@ function Main {
         Install-PlaywrightBrowsers
     }
 
-    # ── Phase 4: Build ────────────────────────────────────────────────────────
-    Write-Banner "Phase 4/4 — Build"
+    # -- Phase 4: Build -------------------------------------------------------
+    Write-Banner "Phase 4/4 -- Build"
 
     Next-Step "Building UI (Vite)"
     Build-UI
@@ -525,7 +517,7 @@ function Main {
     Next-Step "Generating O.R.I.O.N. config"
     New-OrionConfig
 
-    # ── Done ──────────────────────────────────────────────────────────────────
+    # -- Done -----------------------------------------------------------------
     Verify-Build
 
     $sw.Stop()
@@ -533,17 +525,17 @@ function Main {
     $secs = $sw.Elapsed.Seconds
 
     Write-Host ""
-    Write-Host "  ╔═══════════════════════════════════════════════════════╗" -ForegroundColor Green
-    Write-Host "  ║                                                       ║" -ForegroundColor Green
-    Write-Host "  ║   O.R.I.O.N. is ready!  (${mins}m ${secs}s)                     ║" -ForegroundColor Green
-    Write-Host "  ║                                                       ║" -ForegroundColor Green
-    Write-Host "  ╚═══════════════════════════════════════════════════════╝" -ForegroundColor Green
+    Write-Host "  +=========================================================+" -ForegroundColor Green
+    Write-Host "  |                                                         |" -ForegroundColor Green
+    Write-Host ("  |   O.R.I.O.N. is ready!  (" + $mins + "m " + $secs + "s)                          |") -ForegroundColor Green
+    Write-Host "  |                                                         |" -ForegroundColor Green
+    Write-Host "  +=========================================================+" -ForegroundColor Green
     Write-Host ""
     Write-Host "  Project location:" -ForegroundColor White
-    Write-Host "    $InstallDir" -ForegroundColor Cyan
+    Write-Host ("    " + $InstallDir) -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  Start the gateway:" -ForegroundColor White
-    Write-Host "    cd `"$InstallDir`"" -ForegroundColor Cyan
+    Write-Host ('    cd "' + $InstallDir + '"') -ForegroundColor Cyan
     Write-Host "    node openclaw.mjs gateway run --dev" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  Web UI:" -ForegroundColor White
@@ -554,7 +546,7 @@ function Main {
     Write-Host ""
 }
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 #  RUN
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 Main
