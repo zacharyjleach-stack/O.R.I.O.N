@@ -536,12 +536,17 @@ function Main {
     Write-Host "  Project location:" -ForegroundColor White
     Write-Host ("    " + $InstallDir) -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "  Start the gateway:" -ForegroundColor White
+    Write-Host "  Start O.R.I.O.N. (Gateway + Brain + Vision Loop):" -ForegroundColor White
     Write-Host ('    cd "' + $InstallDir + '"') -ForegroundColor Cyan
-    Write-Host "    node openclaw.mjs gateway run --dev" -ForegroundColor Cyan
+    Write-Host "    powershell -ExecutionPolicy Bypass -File bin\start.ps1" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "  Web UI:" -ForegroundColor White
-    Write-Host "    http://localhost:18789/__openclaw__/canvas/" -ForegroundColor Cyan
+    Write-Host "  This launches:" -ForegroundColor White
+    Write-Host "    - Node.js Gateway     http://localhost:18789/__openclaw__/canvas/" -ForegroundColor Cyan
+    Write-Host "    - Python Brain        http://127.0.0.1:18790/ (health check)" -ForegroundColor Cyan
+    Write-Host "    - Hippocampus         Vector memory (ChromaDB)" -ForegroundColor Cyan
+    Write-Host "    - Dream State         Nightly learning at 3:00 AM" -ForegroundColor Cyan
+    Write-Host "    - Scout               GitHub release monitoring (hourly)" -ForegroundColor Cyan
+    Write-Host "    - Vision Loop         Desktop automation (screenshot/analyze/act)" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  Run tests:" -ForegroundColor White
     Write-Host "    pnpm test" -ForegroundColor Cyan
