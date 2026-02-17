@@ -36,7 +36,7 @@ class DreamState:
             ollama_host: URL of the Ollama server (default: localhost:11434)
         """
         self.ollama_host = ollama_host
-        self.model = "llama3"  # Using Llama 3 for summarization
+        self.model = "llama3.1"  # Using Llama 3.1 for summarization
 
         # Regex patterns for extracting user preferences from logs
         self.preference_patterns = [

@@ -41,7 +41,7 @@ class EvolutionEngine:
             ollama_host: URL of Ollama server for code personalization
         """
         self.ollama_host = ollama_host
-        self.model = "llama3"
+        self.model = "llama3.1"
         self.sandbox_dir = None
         self.kernel_guard = KernelGuard()
 

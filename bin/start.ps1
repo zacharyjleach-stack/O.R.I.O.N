@@ -112,7 +112,7 @@ $gatewayArgs = @("openclaw.mjs", "gateway", "run")
 if ($DevMode) { $gatewayArgs += "--dev" }
 
 Write-Host ""
-Write-Host "  Gateway  : http://localhost:18789/__openclaw__/canvas/" -ForegroundColor White
+Write-Host "  Gateway  : http://localhost:18789/" -ForegroundColor White
 Write-Host "  Brain    : http://127.0.0.1:18790/" -ForegroundColor White
 Write-Host "  Press Ctrl+C to stop all systems." -ForegroundColor White
 Write-Host ""

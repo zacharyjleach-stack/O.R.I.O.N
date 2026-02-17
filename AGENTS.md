@@ -186,7 +186,7 @@ bash bin/setup.sh
 1. Install Node.js ≥ 22 (brew/NodeSource on Linux, winget/choco on Windows)
 2. Install pnpm (via corepack or npm)
 3. Install Ollama (official installer)
-4. Pull the `llama3` model
+4. Pull the `llama3.1` model
 5. Run `pnpm install && pnpm build`
 6. Generate `~/.openclaw/openclaw.json` with local Ollama provider config
 
@@ -197,7 +197,7 @@ The generated config at `~/.openclaw/openclaw.json`:
 - Sets `OLLAMA_API_KEY=ollama` in `env.vars` (required for Ollama provider discovery)
 - Defines a `local_ollama` provider pointing to `http://127.0.0.1:11434/v1`
 - Uses `openai-completions` API (Ollama's OpenAI-compatible endpoint)
-- Sets `local_ollama/llama3` as the default agent model via `agents.defaults.model.primary`
+- Sets `local_ollama/llama3.1` as the default agent model via `agents.defaults.model.primary`
 - Streaming is automatically disabled for Ollama providers (workaround for pi-ai SDK issue #1205)
 
 ### Adding More Models

@@ -122,6 +122,7 @@ function defaultIndexHTML() {
   // Update immediately, then re-check after bridge injection completes.
   updateStatus();
   setTimeout(updateStatus, 0);
+  window.addEventListener("openclaw:bridge-ready", updateStatus);
 
   const onStatus = (ev) => {
     const d = ev && ev.detail || {};

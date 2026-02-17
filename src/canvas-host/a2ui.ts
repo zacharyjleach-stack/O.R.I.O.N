@@ -146,6 +146,7 @@ export function injectCanvasLiveReload(html: string): string {
   globalThis.OpenClaw.sendUserAction = sendUserAction;
   globalThis.openclawPostMessage = postToNode;
   globalThis.openclawSendUserAction = sendUserAction;
+  try { globalThis.dispatchEvent(new Event("openclaw:bridge-ready")); } catch {}
 
   try {
     const proto = location.protocol === "https:" ? "wss" : "ws";

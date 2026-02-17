@@ -6,7 +6,7 @@
 #
 # What it does:
 #   1. Ensures Node.js >= 22, pnpm, and Ollama are installed
-#   2. Pulls the llama3 model via Ollama
+#   2. Pulls the llama3.1 model via Ollama
 #   3. Installs dependencies & builds the project
 #   4. Writes ~/.openclaw/openclaw.json with a local Ollama provider
 # ─────────────────────────────────────────────────────────────────────────────
@@ -128,10 +128,10 @@ function Pull-Model {
         Start-Sleep -Seconds 5
     }
 
-    Write-Info "Pulling llama3 (this may take a while on first run)..."
-    ollama pull llama3
-    if ($LASTEXITCODE -ne 0) { Write-Fail "Failed to pull llama3 model" }
-    Write-Ok "llama3 model ready"
+    Write-Info "Pulling llama3.1 (this may take a while on first run)..."
+    ollama pull llama3.1
+    if ($LASTEXITCODE -ne 0) { Write-Fail "Failed to pull llama3.1 model" }
+    Write-Ok "llama3.1 model ready"
 }
 
 # ── 5. Build project ────────────────────────────────────────────────────────
@@ -184,8 +184,8 @@ function New-OrionConfig {
         "apiKey": "ollama",
         "models": [
           {
-            "id": "llama3",
-            "name": "Llama 3",
+            "id": "llama3.1",
+            "name": "Llama 3.1",
             "reasoning": false,
             "contextWindow": 128000,
             "maxTokens": 8192,
@@ -206,7 +206,7 @@ function New-OrionConfig {
   "agents": {
     "defaults": {
       "model": {
-        "primary": "local_ollama/llama3"
+        "primary": "local_ollama/llama3.1"
       }
     }
   }
@@ -240,7 +240,7 @@ function Main {
     Write-Host "    node openclaw.mjs gateway run --dev" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  Then open the web UI at:" -ForegroundColor White
-    Write-Host "    http://localhost:18789/__openclaw__/canvas/" -ForegroundColor Cyan
+    Write-Host "    http://localhost:18789/" -ForegroundColor Cyan
     Write-Host ""
 }
 

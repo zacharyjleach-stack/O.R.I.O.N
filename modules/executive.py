@@ -785,7 +785,7 @@ Be precise with pixel coordinates. The top-left corner is (0, 0)."""
             resp = _requests.post(
                 f"{self._ollama_host}/api/generate",
                 json={
-                    "model": "llama3",
+                    "model": "llama3.1",
                     "prompt": prompt,
                     "stream": False,
                 },

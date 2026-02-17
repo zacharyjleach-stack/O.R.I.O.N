@@ -16,7 +16,7 @@
 #   2.  Installs Node.js 22+ (winget or choco)
 #   3.  Installs pnpm (corepack or npm)
 #   4.  Installs Python 3.10+ (winget or choco)
-#   5.  Installs Ollama + pulls llama3 model
+#   5.  Installs Ollama + pulls llama3.1 model
 #   6.  Clones the O.R.I.O.N. repository
 #   7.  Installs Node dependencies (pnpm install)
 #   8.  Installs UI workspace dependencies
@@ -261,10 +261,10 @@ function Install-Ollama {
         Start-Sleep -Seconds 5
     }
 
-    Write-Info "Pulling llama3 (this may take a while on first run)..."
-    ollama pull llama3
-    if ($LASTEXITCODE -ne 0) { Write-Fail "Failed to pull llama3 model" }
-    Write-Ok "llama3 model ready"
+    Write-Info "Pulling llama3.1 (this may take a while on first run)..."
+    ollama pull llama3.1
+    if ($LASTEXITCODE -ne 0) { Write-Fail "Failed to pull llama3.1 model" }
+    Write-Ok "llama3.1 model ready"
 }
 
 # -- 6. Clone repository ------------------------------------------------------
@@ -455,8 +455,8 @@ function New-OrionConfig {
         "apiKey": "ollama",
         "models": [
           {
-            "id": "llama3",
-            "name": "Llama 3",
+            "id": "llama3.1",
+            "name": "Llama 3.1",
             "reasoning": false,
             "contextWindow": 128000,
             "maxTokens": 8192,
@@ -477,7 +477,7 @@ function New-OrionConfig {
   "agents": {
     "defaults": {
       "model": {
-        "primary": "local_ollama/llama3"
+        "primary": "local_ollama/llama3.1"
       }
     }
   }
@@ -558,7 +558,7 @@ function Main {
     }
 
     if (-not $SkipOllama) {
-        Next-Step "Installing Ollama + pulling llama3"
+        Next-Step "Installing Ollama + pulling llama3.1"
         Install-Ollama
     }
 
@@ -627,7 +627,7 @@ function Main {
     Write-Host "    powershell -ExecutionPolicy Bypass -File bin\start.ps1" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  This launches:" -ForegroundColor White
-    Write-Host "    - Node.js Gateway     http://localhost:18789/__openclaw__/canvas/" -ForegroundColor Cyan
+    Write-Host "    - Node.js Gateway     http://localhost:18789/" -ForegroundColor Cyan
     Write-Host "    - Python Brain        http://127.0.0.1:18790/ (health check)" -ForegroundColor Cyan
     Write-Host "    - Hippocampus         Vector memory (ChromaDB)" -ForegroundColor Cyan
     Write-Host "    - Dream State         Nightly learning at 3:00 AM" -ForegroundColor Cyan

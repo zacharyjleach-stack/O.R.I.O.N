@@ -7,7 +7,7 @@
 #
 # What it does:
 #   1. Ensures Node.js ≥ 22, pnpm, and Ollama are installed
-#   2. Pulls the llama3 model via Ollama
+#   2. Pulls the llama3.1 model via Ollama
 #   3. Installs dependencies & builds the project
 #   4. Writes ~/.openclaw/openclaw.json with a local Ollama provider
 # ─────────────────────────────────────────────────────────────────────────────
@@ -122,9 +122,9 @@ pull_model() {
     done
   fi
 
-  info "Pulling llama3 (this may take a while on first run)…"
-  ollama pull llama3
-  ok "llama3 model ready"
+  info "Pulling llama3.1 (this may take a while on first run)…"
+  ollama pull llama3.1
+  ok "llama3.1 model ready"
 }
 
 # ── 5. Build project ────────────────────────────────────────────────────────
@@ -182,8 +182,8 @@ generate_config() {
         "apiKey": "ollama",
         "models": [
           {
-            "id": "llama3",
-            "name": "Llama 3",
+            "id": "llama3.1",
+            "name": "Llama 3.1",
             "reasoning": false,
             "contextWindow": 128000,
             "maxTokens": 8192,
@@ -204,7 +204,7 @@ generate_config() {
   "agents": {
     "defaults": {
       "model": {
-        "primary": "local_ollama/llama3"
+        "primary": "local_ollama/llama3.1"
       }
     }
   }
@@ -233,7 +233,7 @@ main() {
   printf "  Start the gateway:\n"
   printf "    ${CYAN}node openclaw.mjs gateway run --dev${NC}\n\n"
   printf "  Then open the web UI at:\n"
-  printf "    ${CYAN}http://localhost:18789/__openclaw__/canvas/${NC}\n\n"
+  printf "    ${CYAN}http://localhost:18789/${NC}\n\n"
 }
 
 main "$@"
